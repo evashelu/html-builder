@@ -1,51 +1,32 @@
-const fs = require('fs');
+const fs = require('fs').promises;
 const path = require('path');
 
-const stylesDirs = [
-  path.join(__dirname, 'styles'),
-  path.join(__dirname, 'test-files', 'styles')
-];
+const stylesDir = path.join(__dirname, 'styles');
 const outputDir = path.join(__dirname, 'project-dist');
-const outputFile = path.join(outputDir, 'bigAll.css');
+const outputFile = path.join(outputDir, 'bundle.css');
 
-const mergeStyles = async (dirs) => {
-  const cssAllContent = [];
+const mergeStyles = async () => {
+    const cssContent = [];
 
-  for (const dir of dirs) {
     try {
-      const files = await fs.promises.readdir(dir);
+        const files = await fs.readdir(stylesDir);
 
-      for (const file of files) {
-        const filePath = path.join(dir, file);
-        const fileStat = await fs.promises.stat(filePath);
+        for (const file of files) {
+            const filePath = path.join(stylesDir, file);
+            const fileStat = await fs.stat(filePath);
 
-        if (fileStat.isDirectory()) {
-          const nestedContent = await mergeStyles([filePath]);
-          cssAllContent.push(...nestedContent);
-        } else if (fileStat.isFile() && path.extname(file) === '.css') {
-          const content = await fs.promises.readFile(filePath, 'utf-8');
-          cssAllContent.push(content);
-          console.log(`Added file: ${filePath}`);
+            if (fileStat.isFile() && path.extname(file) === '.css') {
+                const content = await fs.readFile(filePath, 'utf-8');
+                cssContent.push(content);
+                console.log(`Added file: ${filePath}`);
+            }
         }
-      }
+
+        await fs.writeFile(outputFile, cssContent.join('\n'), 'utf-8');
+        console.log('Styles merged successfully into bundle.css!');
     } catch (error) {
-      console.error(`Error reading directory ${dir}:`, error);
+        console.error('Error merging styles:', error);
     }
-  }
-
-  return cssAllContent;
 };
 
-const integrationStyles = async () => {
-  try {
-    console.log('Running styles merging...');
-    await fs.promises.mkdir(outputDir, { recursive: true });
-    const allCssContent = await mergeStyles(stylesDirs);
-    await fs.promises.writeFile(outputFile, allCssContent.join('\n'), 'utf-8');
-    console.log('Styles merged successfully into bigAll.css!');
-  } catch (error) {
-    console.error('Error merging styles:', error);
-  }
-};
-
-integrationStyles();
+mergeStyles();
