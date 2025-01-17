@@ -23,13 +23,19 @@ async function buildPage() {
     await fs.writeFile(path.join(__dirname, 'project-dist', 'index.html'), result);
 }
 
-const stylesDir = path.join(__dirname, 'styles');
+const stylesDirs = [
+    path.join(__dirname, 'styles'),
+    path.join(__dirname, 'test-files', 'styles')
+];
 const outputDir = path.join(__dirname, 'project-dist');
-const outputFile = path.join(outputDir, 'bigAll.css');
+const outputFile = path.join(outputDir, 'bundle.css');
 
-const mergeStyles = async (dir) => {
+const mergeStyles = async (dirs) => {
     const cssAllContent = [];
-    const files = await fs.readdir(dir);
+
+    for (const dir of dirs) {
+        try {
+            const files = await fs.readdir(dir);
 
     for (const file of files) {
         const filePath = path.join(dir, file);
@@ -44,7 +50,12 @@ const mergeStyles = async (dir) => {
             console.log(`Added file: ${filePath}`);
         }
     }
-    return cssAllContent;
+} catch (error) {
+    console.error(`Error reading directory ${dir}:`, error);
+}
+}
+
+return cssAllContent;
 };
 
 const integrationStyles = async () => {
@@ -53,7 +64,7 @@ const integrationStyles = async () => {
         await fs.mkdir(outputDir, { recursive: true });
         const allCssContent = await mergeStyles(stylesDir);
         await fs.writeFile(outputFile, allCssContent.join('\n'), 'utf-8');
-        console.log('Styles merged successfully into bigAll.css!');
+        console.log('Styles merged successfully into bundle.css!');
     } catch (error) {
         console.error('Error merging styles:', error);
     }
